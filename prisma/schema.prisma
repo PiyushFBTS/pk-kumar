@@ -1,0 +1,128 @@
+// P. R. Kumar & Co. — Prisma schema (MySQL)
+// Run: npx prisma migrate dev --name init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ArticleStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ApplyType {
+  JOB
+  INTERNSHIP
+  ARTICLESHIP
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         Role      @default(USER)
+  active       Boolean   @default(true)
+  articles     Article[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Article {
+  id           Int           @id @default(autoincrement())
+  title        String
+  slug         String        @unique
+  body         String        @db.LongText // Tiptap HTML/JSON
+  coverImage   String?
+  status       ArticleStatus @default(DRAFT)
+  rejectReason String?       @db.Text
+  author       User          @relation(fields: [authorId], references: [id])
+  authorId     Int
+  approvedBy   Int?
+  publishedAt  DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  // Composite supports the public feed (status=APPROVED order by publishedAt)
+  // and status-only filters via the leading column.
+  @@index([status, publishedAt])
+  @@index([authorId])
+}
+
+model PartnerQuote {
+  id        Int      @id @default(autoincrement())
+  partner   String
+  quote     String   @db.Text
+  order     Int      @default(0)
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model Resource {
+  id        Int      @id @default(autoincrement())
+  label     String // e.g. "MCA"
+  url       String   @db.Text
+  category  String? // Regulatory, Tax, etc.
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model PracticeArea {
+  id          Int    @id @default(autoincrement())
+  slug        String @unique
+  name        String
+  leadPartner String
+  summary     String @db.Text
+  services    Json // list of service strings
+  order       Int    @default(0)
+}
+
+model Partner {
+  id    Int     @id @default(autoincrement())
+  slug  String  @unique
+  name  String
+  role  String
+  bio   String  @db.Text
+  photo String?
+  phone String?
+  email String?
+  order Int     @default(0)
+}
+
+model Enquiry {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  service   String
+  message   String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model JobApplication {
+  id            Int       @id @default(autoincrement())
+  applyType     ApplyType
+  name          String
+  email         String
+  phone         String
+  hasExperience Boolean   @default(false)
+  experience    Json? // conditional fields when hasExperience = true
+  resume        String? // uploaded file path
+  coverNote     String?   @db.Text
+  createdAt     DateTime  @default(now())
+
+  @@index([createdAt])
+}

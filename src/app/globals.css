@@ -1,26 +1,161 @@
 @import "tailwindcss";
 
+/* Drive the `dark:` variant from the .dark class (toggled by the header switch)
+ * instead of the OS preference. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Brand palette — mint primary (#6ce0c3) + a dark-teal "ink" for hero/buttons.
+ * Light + dark themes via a `.dark` class on <html>, toggled from the header.
+ * Components use semantic tokens (brand/surface/etc.) that re-map per theme,
+ * so most of the app adapts without per-element dark: variants.
+ */
 :root {
+  color-scheme: light;
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #0f1f1c;
+  --brand: #0c3a3c; /* headings / strong text (theme-aware) */
+  --brand-accent: #0e7490; /* small text accents + focus (theme-aware) */
+  --muted: #5a6b67;
+  --surface: #f0f7f5;
+  --border: #d9e6e2;
+
+  /* Constant across themes */
+  --primary: #55d7d9; /* primary fills: buttons, active states */
+  --primary-foreground: #06302f; /* dark text on the cyan primary */
+  --header: #e3e083cf; /* header + footer bar (w/ alpha) */
+  --ink: #0c3a3c; /* dark branded blocks (hero) — always white text */
+}
+
+.dark {
+  color-scheme: dark;
+  --background: #0a1311;
+  --foreground: #e6f1ee;
+  --brand: #bdeeee;
+  --brand-accent: #55d7d9;
+  --muted: #93a8a3;
+  --surface: #111f1c;
+  --border: #233631;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-brand: var(--brand);
+  --color-brand-accent: var(--brand-accent);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-header: var(--header);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand-accent);
+  outline-offset: 2px;
+}
+
+/* Vertical auto-scroll ("notice board") — content moves bottom→top, looping.
+ * The list is duplicated in markup; -50% advances exactly one copy. Duration
+ * is set inline based on item count. Honors reduced-motion via the rule below. */
+@keyframes marquee-up {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+.animate-marquee-up {
+  animation-name: marquee-up;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Tiptap / rich-text content styling (editor + rendered articles). */
+.ProseMirror :where(h1) {
+  font-size: 1.875rem;
+  font-weight: 600;
+  margin: 1rem 0 0.5rem;
+}
+.ProseMirror :where(h2) {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 1rem 0 0.5rem;
+}
+.ProseMirror :where(h3) {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0.75rem 0 0.5rem;
+}
+.ProseMirror :where(p) {
+  margin: 0.5rem 0;
+}
+.ProseMirror :where(ul) {
+  list-style: disc;
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+.ProseMirror :where(ol) {
+  list-style: decimal;
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+.ProseMirror :where(blockquote) {
+  border-left: 3px solid var(--brand-accent);
+  padding-left: 1rem;
+  color: var(--muted);
+  margin: 0.75rem 0;
+}
+.ProseMirror :where(a) {
+  color: var(--brand);
+  text-decoration: underline;
+}
+.ProseMirror :where(img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.375rem;
+  margin: 0.75rem 0;
+}
+.ProseMirror :where(pre) {
+  background: var(--surface);
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  overflow-x: auto;
+}
+.ProseMirror:focus {
+  outline: none;
+}
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: "Start writing…";
+  color: var(--muted);
+  float: left;
+  height: 0;
+  pointer-events: none;
 }
