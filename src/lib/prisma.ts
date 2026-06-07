@@ -1,17 +1,16 @@
 import { PrismaClient } from "@/generated/prisma/client";
-import { PrismaMariaDb } from "@prisma/adapter-mariadb";
+import { makeMariaAdapter } from "@/lib/db-adapter";
 import { env } from "@/lib/env";
 
-// Prisma 7 connects through a driver adapter (no Rust engine). For MySQL
-// we use the mariadb-based adapter, which speaks the MySQL protocol.
+// Prisma 7 connects through a driver adapter (no Rust engine). For MySQL/TiDB
+// we use the mariadb-based adapter (TLS auto-enabled for managed databases).
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
 function createClient(): PrismaClient {
-  const adapter = new PrismaMariaDb(env.databaseUrl);
   return new PrismaClient({
-    adapter,
+    adapter: makeMariaAdapter(env.databaseUrl),
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
   });
 }
